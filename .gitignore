@@ -4,3 +4,11 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+ml/.venv/
+ml/runs/
+ml/data/
+
+# Secrets locaux : ne jamais committer
+.env
+.env.*
+!.env.example

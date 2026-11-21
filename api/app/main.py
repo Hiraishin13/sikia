@@ -7,20 +7,25 @@ import json
 import logging
 import os
 import time
+from collections import deque
 from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from .pipeline import GlossCandidate, Recognizer, StubRecognizer, StubTranslator, Translator
+from .factory import build_recognizer, build_translator, load_env_files
+from .pipeline import GlossCandidate, Recognizer, Translator
 from .protocol import PROTOCOL_VERSION, ProtocolError, decode_packet
 from .session import Segmenter
+from .translator_base import translate_timeout_s
+
+load_env_files()  # avant toute lecture de configuration (api/.env, ignoré par git)
 
 log = logging.getLogger("sikia")
 
 #: au-delà, l'app affiche les gloses brutes (mode dégradé, voir l'architecture)
-TRANSLATE_TIMEOUT_S = 2.0
+TRANSLATE_TIMEOUT_S = translate_timeout_s()
 
 
 def _gloss_json(candidates: list[list[GlossCandidate]]) -> list[dict]:
@@ -39,6 +44,8 @@ class FeedbackIn(BaseModel):
     sentence_id: str | None = Field(default=None, max_length=64)
     #: gloses telles qu'affichées, pour retrouver quel signe était concerné
     glosses: list[str] = Field(default_factory=list, max_length=50)
+    #: pour wrong_sign : position (à partir de 0) du signe faux dans `glosses`
+    gloss_index: int | None = Field(default=None, ge=0, lt=50)
     expected: str = Field(max_length=500)
 
 
@@ -48,8 +55,8 @@ def create_app(
     feedback_path: Path | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Sikia API", version="0.1.0")
-    recognizer = recognizer or StubRecognizer()
-    translator = translator or StubTranslator()
+    recognizer = recognizer or build_recognizer()
+    translator = translator or build_translator()
     feedback_path = feedback_path or Path(os.environ.get("SIKIA_FEEDBACK_FILE", "data/feedback.jsonl"))
 
     @app.get("/", include_in_schema=False)
@@ -78,6 +85,7 @@ def create_app(
         await ws.accept()
         segmenter = Segmenter(recognizer)
         sentence_no = 0
+        recent: deque[str] = deque(maxlen=2)  # dernières phrases, contexte du traducteur
         await ws.send_json({"type": "ready", "version": PROTOCOL_VERSION})
         try:
             while True:
@@ -114,9 +122,10 @@ def create_app(
                     }
                     try:
                         tr = await asyncio.wait_for(
-                            translator.translate(events.sentence), TRANSLATE_TIMEOUT_S
+                            translator.translate(events.sentence, list(recent)), TRANSLATE_TIMEOUT_S
                         )
                         out |= {"text": tr.text, "uncertain": tr.uncertain, "degraded": False}
+                        recent.append(tr.text)
                     except Exception:  # délai dépassé ou API en panne : on n'interrompt pas le flux
                         log.warning("traduction indisponible, mode dégradé", exc_info=True)
                         out |= {"text": None, "uncertain": True, "degraded": True}

@@ -8,6 +8,7 @@ client avant que le vrai modèle existe. Elles seront remplacées par :
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -34,8 +35,15 @@ class Recognizer(Protocol):
 
 
 class Translator(Protocol):
-    async def translate(self, glosses: list[list[GlossCandidate]]) -> Translation:
-        """glosses : pour chaque signe de la phrase, ses candidats (le premier est le meilleur)."""
+    async def translate(
+        self, glosses: list[list[GlossCandidate]], context: Sequence[str] = ()
+    ) -> Translation:
+        """glosses : pour chaque signe de la phrase, ses candidats (le premier est le meilleur).
+
+        context : les dernières phrases traduites de la conversation, de la plus ancienne à la
+        plus récente, pour lever les ambiguïtés (pronoms, sujet sous-entendu).
+        Lève une exception si la traduction est impossible : l'appelant bascule alors en mode dégradé.
+        """
         ...
 
 
@@ -56,8 +64,10 @@ class StubTranslator:
 
     UNCERTAIN_BELOW = 0.6
 
-    async def translate(self, glosses: list[list[GlossCandidate]]) -> Translation:
-        words = [cands[0].gloss.lower() for cands in glosses if cands]
+    async def translate(
+        self, glosses: list[list[GlossCandidate]], context: Sequence[str] = ()
+    ) -> Translation:
+        words =[cands[0].gloss.lower() for cands in glosses if cands]
         text = " ".join(words)
         text = (text[:1].upper() + text[1:] + ".") if text else ""
         uncertain = any(cands and cands[0].confidence < self.UNCERTAIN_BELOW for cands in glosses)

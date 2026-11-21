@@ -80,12 +80,12 @@ def test_reset_efface_la_phrase_en_cours(client):
 
 
 class FailingTranslator:
-    async def translate(self, glosses: list[list[GlossCandidate]]) -> Translation:
+    async def translate(self, glosses: list[list[GlossCandidate]], context=()) -> Translation:
         raise RuntimeError("API LLM indisponible")
 
 
 class SlowTranslator:
-    async def translate(self, glosses: list[list[GlossCandidate]]) -> Translation:
+    async def translate(self, glosses: list[list[GlossCandidate]], context=()) -> Translation:
         await asyncio.sleep(5)
         return Translation("trop tard", False)
 
@@ -114,3 +114,35 @@ def test_feedback_est_enregistre(client, tmp_path):
 def test_feedback_invalide(client):
     assert client.post("/v1/feedback", json={"kind": "autre", "expected": "x"}).status_code == 422
     assert client.post("/v1/feedback", json={"kind": "wrong_sign", "expected": "x" * 501}).status_code == 422
+
+
+class RecordingTranslator:
+    def __init__(self):
+        self.contexts: list[list[str]] = []
+
+    async def translate(self, glosses, context=()):
+        self.contexts.append(list(context))
+        return Translation(f"Phrase {len(self.contexts)}.", False)
+
+
+def test_le_traducteur_recoit_les_phrases_precedentes(tmp_path):
+    translator = RecordingTranslator()
+    client = TestClient(create_app(translator=translator, feedback_path=tmp_path / "f.jsonl"))
+    with client.websocket_connect("/v1/stream") as ws:
+        ws.receive_json()
+        for seq in (1, 2, 3):
+            send(ws, seq, sign(12) + pause(30))
+            drain_until(ws, "final")
+    assert translator.contexts == [[], ["Phrase 1."], ["Phrase 1.", "Phrase 2."]]
+
+
+def test_feedback_signe_faux_garde_la_position(client, tmp_path):
+    body = {"kind": "wrong_sign", "sentence_id": "s2", "glosses": ["MOI", "MERCI"], "gloss_index": 1, "expected": "OUI"}
+    assert client.post("/v1/feedback", json=body).status_code == 202
+    saved = json.loads((tmp_path / "feedback.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    assert saved["gloss_index"] == 1 and saved["expected"] == "OUI"
+
+
+def test_feedback_position_invalide(client):
+    body = {"kind": "wrong_sign", "glosses": ["A"], "gloss_index": -1, "expected": "x"}
+    assert client.post("/v1/feedback", json=body).status_code == 422
