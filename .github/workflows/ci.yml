@@ -51,3 +51,23 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest -q
+
+  ml:
+    name: ML (tests, chaîne d'entraînement)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            api/pyproject.toml
+            ml/pyproject.toml
+      # PyTorch CPU : la version par défaut embarque CUDA (~2 Go), inutile ici.
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      # ml/ importe le prétraitement de api/ : les deux sont installés ensemble.
+      - run: pip install -e api -e "ml[dev]"
+      - run: ruff check ml
+      - run: pytest -q
+        working-directory: ml
