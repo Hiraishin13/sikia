@@ -1,5 +1,7 @@
 # Sikia
 
+[![CI](https://github.com/Hiraishin13/sikia/actions/workflows/ci.yml/badge.svg)](https://github.com/Hiraishin13/sikia/actions/workflows/ci.yml)
+
 Traduction de la langue des signes en texte, sur téléphone. L'architecture est décrite dans
 [docs/architecture.md](docs/architecture.md).
 
@@ -34,6 +36,8 @@ Ouvrir l'adresse affichée par Vite, autoriser la caméra, cliquer sur **Traduir
 
 La caméra exige HTTPS ou `localhost`. Pour tester sur un téléphone, utiliser un tunnel HTTPS
 (ex. `cloudflared tunnel --url http://localhost:5173`) : le proxy Vite gère aussi le WebSocket.
+
+La CI (`.github/workflows/ci.yml`) rejoue tout cela à chaque push et pull request.
 
 Tests : `npm test` et `npm run lint` dans `web/` ; `python -m pytest` et `python -m ruff check .` dans `api/`.
 
