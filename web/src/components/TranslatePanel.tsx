@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { FrameListener } from '../hooks/useCapture'
 import { normalizeFrame } from '../lib/landmarks'
-import { StreamClient, type ConnectionState, type Gloss, type ServerMessage } from '../lib/stream'
+import { StreamClient, type ConnectionState, type Gloss, type Sentence } from '../lib/stream'
+import { CorrectionForm } from './CorrectionForm'
 import { Icon } from './Icon'
 
-export type Sentence = Extract<ServerMessage, { type: 'final' }>
+export type { Sentence }
 
 interface Props {
   subscribe: (fn: FrameListener) => () => void
@@ -23,6 +24,8 @@ export function TranslatePanel({ subscribe, sentences, onSentence }: Props) {
   const [conn, setConn] = useState<ConnectionState | null>(null)
   const [partial, setPartial] = useState<Gloss[]>([])
   const [flipped, setFlipped] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [correctedIds, setCorrectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!active) return
@@ -48,6 +51,17 @@ export function TranslatePanel({ subscribe, sentences, onSentence }: Props) {
 
   const [latest, ...earlier] = sentences
 
+  const lineProps = (s: Sentence) => ({
+    sentence: s,
+    editing: editingId === s.sentence_id,
+    corrected: correctedIds.has(s.sentence_id),
+    onEdit: () => setEditingId(s.sentence_id),
+    onDone: (sent: boolean) => {
+      setEditingId(null)
+      if (sent) setCorrectedIds((ids) => new Set(ids).add(s.sentence_id))
+    },
+  })
+
   return (
     <div className="panel">
       {conn && (
@@ -56,7 +70,12 @@ export function TranslatePanel({ subscribe, sentences, onSentence }: Props) {
         </p>
       )}
 
-      <div className={`output${flipped ? ' is-flipped' : ''}`} aria-live="polite">
+      {/* Annonce la dernière phrase aux lecteurs d'écran sans lire les formulaires de correction. */}
+      <p className="sr-only" aria-live="polite">
+        {latest ? (latest.text ?? latest.glosses.map((g) => g.gloss).join(' ')) : ''}
+      </p>
+
+      <div className={`output${flipped ? ' is-flipped' : ''}`}>
         {partial.length > 0 && (
           <p className="partial">
             <span className="label">En cours</span> {partial.map((g) => g.gloss).join(' · ')}
@@ -65,12 +84,12 @@ export function TranslatePanel({ subscribe, sentences, onSentence }: Props) {
 
         {latest ? (
           <>
-            <SentenceLine sentence={latest} large />
+            <SentenceLine {...lineProps(latest)} large />
             {earlier.length > 0 && (
               <ul className="earlier">
                 {earlier.map((s) => (
                   <li key={s.sentence_id}>
-                    <SentenceLine sentence={s} />
+                    <SentenceLine {...lineProps(s)} />
                   </li>
                 ))}
               </ul>
@@ -105,7 +124,16 @@ export function TranslatePanel({ subscribe, sentences, onSentence }: Props) {
   )
 }
 
-function SentenceLine({ sentence, large = false }: { sentence: Sentence; large?: boolean }) {
+interface LineProps {
+  sentence: Sentence
+  editing: boolean
+  corrected: boolean
+  onEdit: () => void
+  onDone: (sent: boolean) => void
+  large?: boolean
+}
+
+function SentenceLine({ sentence, editing, corrected, onEdit, onDone, large = false }: LineProps) {
   const raw = sentence.glosses.map((g) => g.gloss).join(' ')
   return (
     <div className={large ? 'sentence sentence-large' : 'sentence'}>
@@ -119,6 +147,18 @@ function SentenceLine({ sentence, large = false }: { sentence: Sentence; large?:
         <p className="note">
           <Icon name="alert" size={16} /> Traduction incertaine. Signes reconnus : {raw}.
         </p>
+      )}
+
+      {editing ? (
+        <CorrectionForm sentence={sentence} onDone={onDone} />
+      ) : corrected ? (
+        <p className="note note-ok">
+          <Icon name="check" size={16} /> Merci, correction envoyée.
+        </p>
+      ) : (
+        <button className="btn btn-link" onClick={onEdit}>
+          Corriger
+        </button>
       )}
     </div>
   )

@@ -47,6 +47,9 @@ export type ServerMessage =
     }
   | { type: 'error'; code: string; message: string }
 
+/** Une phrase finale renvoyée par le serveur. */
+export type Sentence = Extract<ServerMessage, { type: 'final' }>
+
 export type ConnectionState = 'connecting' | 'open' | 'closed'
 
 export interface StreamHandlers {
