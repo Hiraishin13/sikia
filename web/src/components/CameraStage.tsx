@@ -51,6 +51,11 @@ export function CameraStage({ videoRef, overlayRef, status, error, hint, fps, as
           </svg>
         )}
 
+        {ready && (
+          <span className="camera-chip">
+            <span className="dot" aria-hidden /> Caméra active
+          </span>
+        )}
         {ready && debug && <span className="camera-debug">{fps} i/s</span>}
 
         {!ready && (
@@ -79,7 +84,9 @@ export function CameraStage({ videoRef, overlayRef, status, error, hint, fps, as
 
       {ready && (
         <p className={`framing framing-${hint === 'ok' ? 'ok' : 'warn'}`} role="status">
-          <Icon name={HINT_ICON[hint]} />
+          <span className="framing-icon">
+            <Icon name={HINT_ICON[hint]} />
+          </span>
           {HINT_TEXT[hint]}
         </p>
       )}

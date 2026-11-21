@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { sendFeedback, sentenceCorrection, signCorrection } from '../lib/feedback'
 import type { Sentence } from '../lib/stream'
+import { glossText } from '../lib/gloss'
 import { Icon } from './Icon'
 
 type Step = 'choose' | 'sentence' | 'pick-sign' | 'new-sign'
@@ -8,20 +9,23 @@ type Status = 'idle' | 'sending' | 'error'
 
 interface Props {
   sentence: Sentence
-  onDone: (sent: boolean) => void
+  /** Session du flux : permet de retrouver le geste concerné si la personne accepte de le partager. */
+  sessionId?: string
+  onDone: (sent: boolean, shared?: boolean) => void
 }
 
 /**
  * Correction d'une traduction en deux gestes : « la phrase » ou « un signe », puis la bonne réponse.
  * Chaque correction nourrit l'amélioration du modèle ; seul du texte est envoyé.
  */
-export function CorrectionForm({ sentence, onDone }: Props) {
+export function CorrectionForm({ sentence, sessionId, onDone }: Props) {
   const raw = sentence.glosses.map((g) => g.gloss).join(' ')
   const [step, setStep] = useState<Step>('choose')
   const [text, setText] = useState(sentence.text ?? raw)
   const [signIdx, setSignIdx] = useState(0)
   const [other, setOther] = useState('')
   const [status, setStatus] = useState<Status>('idle')
+  const [share, setShare] = useState(false) // jamais coché par défaut : le consentement doit être un geste volontaire
   const ref = useRef<HTMLDivElement>(null)
 
   // À chaque étape, le formulaire reste visible (sinon il passe sous la barre d'actions collée en bas).
@@ -31,11 +35,13 @@ export function CorrectionForm({ sentence, onDone }: Props) {
 
   const submit = async (payload: Parameters<typeof sendFeedback>[0]) => {
     setStatus('sending')
-    if (await sendFeedback(payload)) onDone(true)
+    const res = await sendFeedback(payload)
+    if (res.ok) onDone(true, res.shared)
     else setStatus('error')
   }
 
   const wrongSign = sentence.glosses[signIdx]
+  const sharing = share && sessionId ? { sessionId } : undefined
 
   return (
     <div ref={ref} className="correction" role="group" aria-label="Corriger la traduction">
@@ -91,7 +97,7 @@ export function CorrectionForm({ sentence, onDone }: Props) {
                   setStep('new-sign')
                 }}
               >
-                {g.gloss}
+                {glossText(g.gloss)}
               </button>
             ))}
           </div>
@@ -104,7 +110,7 @@ export function CorrectionForm({ sentence, onDone }: Props) {
       {step === 'new-sign' && wrongSign && (
         <>
           <p className="correction-title">
-            Vous avez signé quoi, à la place de <strong>{wrongSign.gloss}</strong> ?
+            Vous avez signé quoi, à la place de <strong>{glossText(wrongSign.gloss)}</strong> ?
           </p>
           {wrongSign.alternatives.length > 0 && (
             <div className="chips">
@@ -113,7 +119,7 @@ export function CorrectionForm({ sentence, onDone }: Props) {
                   key={a.gloss}
                   className="btn btn-quiet chip"
                   disabled={status === 'sending'}
-                  onClick={() => submit(signCorrection(sentence, signIdx, a.gloss))}
+                  onClick={() => submit(signCorrection(sentence, signIdx, a.gloss, sharing))}
                 >
                   {a.gloss}
                 </button>
@@ -129,11 +135,23 @@ export function CorrectionForm({ sentence, onDone }: Props) {
               onChange={(e) => setOther(e.target.value)}
             />
           </label>
+          {sessionId && (
+            <label className="consent">
+              <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />
+              <span>
+                <strong>Partager ce geste pour améliorer l'application</strong>
+                <small>
+                  Seuls les points de vos mains, de votre corps et de votre visage sont conservés, jamais la vidéo.
+                  Une personne vérifie chaque exemple avant qu'il serve à entraîner le modèle.
+                </small>
+              </span>
+            </label>
+          )}
           <div className="correction-actions">
             <button
               className="btn btn-primary"
               disabled={status === 'sending' || other.trim().length === 0}
-              onClick={() => submit(signCorrection(sentence, signIdx, other))}
+              onClick={() => submit(signCorrection(sentence, signIdx, other, sharing))}
             >
               Envoyer la correction
             </button>

@@ -8,8 +8,8 @@ import { DEFAULT_FACE_STRIDE, createTracker, type Tracker } from '../lib/tracker
 
 export type CaptureStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type GestureStatus = 'idle' | 'loading' | 'ready' | 'error'
-/** signs : mains + corps + visage pour les signes. gestures : le reconnaisseur de gestes de Google seul. */
-export type CaptureMode = 'signs' | 'gestures'
+/** signs : mains + corps + visage. gestures : le reconnaisseur de gestes de Google. off : la caméra reste ouverte mais rien n'est calculé. */
+export type CaptureMode = 'signs' | 'gestures' | 'off'
 export type FrameListener = (raw: RawFrame, nowMs: number) => void
 export type GestureListener = (frame: GestureFrame) => void
 
@@ -132,6 +132,7 @@ export function useCapture(mode: CaptureMode = 'signs') {
       const overlay = overlayRef.current
       if (!video || !overlay || video.readyState < 2 || video.currentTime === lastVideoTime) return
 
+      if (modeRef.current === 'off') return // onglet sans caméra (laboratoire) : aucun calcul
       const gestureMode = modeRef.current === 'gestures'
       const tracker = trackerRef.current
       const gestureTracker = gestureRef.current

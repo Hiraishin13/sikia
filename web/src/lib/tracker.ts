@@ -21,9 +21,18 @@ export interface TrackerOptions {
   faceStride?: number
 }
 
+/** Ce que le suivi sait analyser : la vidéo de la caméra, un fichier vidéo décodé, ou une image. */
+export type ImageSource = HTMLVideoElement | HTMLCanvasElement | HTMLImageElement | ImageBitmap
+
+function sizeOf(s: ImageSource): { w: number; h: number } {
+  if (s instanceof HTMLVideoElement) return { w: s.videoWidth, h: s.videoHeight }
+  if (s instanceof HTMLImageElement) return { w: s.naturalWidth, h: s.naturalHeight }
+  return { w: s.width, h: s.height }
+}
+
 export interface Tracker {
-  /** Analyse l'image courante de la vidéo. `nowMs` doit croître à chaque appel. */
-  detect(video: HTMLVideoElement, nowMs: number): { raw: RawFrame; timing: FrameTiming }
+  /** Analyse l'image courante. `nowMs` doit croître à chaque appel. */
+  detect(video: ImageSource, nowMs: number): { raw: RawFrame; timing: FrameTiming }
   /** Calcul réellement utilisé par chaque modèle (le GPU n'est pas disponible partout). */
   delegates: Delegates
   faceStride: number
@@ -104,7 +113,7 @@ export async function createTracker({ faceStride = DEFAULT_FACE_STRIDE }: Tracke
 
       return {
         raw: {
-          aspect: video.videoWidth / video.videoHeight,
+          aspect: sizeOf(video).w / sizeOf(video).h,
           leftHand,
           rightHand,
           pose: poseResult.landmarks[0] ?? null,

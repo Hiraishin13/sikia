@@ -1,0 +1,7 @@
+# Vercel ne déploie que l'interface (web/). L'API FastAPI, l'entraînement et les docs restent hors du déploiement :
+# sans cela, le dossier api/ est pris pour une fonction Python et le build échoue (PYTHON_ENTRYPOINT_NOT_FOUND).
+api
+ml
+docs
+maquette
+*.zip

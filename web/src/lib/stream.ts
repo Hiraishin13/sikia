@@ -33,7 +33,7 @@ export interface Gloss extends GlossAlt {
 }
 
 export type ServerMessage =
-  | { type: 'ready'; version: number }
+  | { type: 'ready'; version: number; session_id?: string }
   | { type: 'partial'; seq: number; glosses: Gloss[] }
   | {
       type: 'final'

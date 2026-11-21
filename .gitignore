@@ -15,3 +15,4 @@ ml/data/
 
 # Enregistrements de points clés exportés par l'app : données personnelles, jamais dans le dépôt
 /*.json
+!/vercel.json

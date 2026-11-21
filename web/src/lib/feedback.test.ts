@@ -38,16 +38,26 @@ describe('sendFeedback', () => {
   const payload = sentenceCorrection(sentence, 'Merci beaucoup.')
 
   it('envoie en JSON vers /v1/feedback', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
-    expect(await sendFeedback(payload, fetchMock as unknown as typeof fetch)).toBe(true)
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ shared: false }) })
+    expect(await sendFeedback(payload, fetchMock as unknown as typeof fetch)).toEqual({ ok: true, shared: false })
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/v1/feedback')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body)).toEqual(payload)
   })
 
+  it('le partage des points clés exige le consentement et la session', () => {
+    expect(signCorrection(sentence, 0, 'oui')).not.toHaveProperty('share_keypoints')
+    expect(signCorrection(sentence, 0, 'oui', { sessionId: 'abc' })).toMatchObject({ share_keypoints: true, session_id: 'abc' })
+  })
+
+  it('indique si le serveur a réellement conservé le geste', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ shared: true }) })
+    expect(await sendFeedback(payload, fetchMock as unknown as typeof fetch)).toEqual({ ok: true, shared: true })
+  })
+
   it("renvoie false si le serveur refuse ou si le réseau tombe, sans lever d'exception", async () => {
-    expect(await sendFeedback(payload, vi.fn().mockResolvedValue({ ok: false }) as unknown as typeof fetch)).toBe(false)
-    expect(await sendFeedback(payload, vi.fn().mockRejectedValue(new Error('réseau')) as unknown as typeof fetch)).toBe(false)
+    expect((await sendFeedback(payload, vi.fn().mockResolvedValue({ ok: false }) as unknown as typeof fetch)).ok).toBe(false)
+    expect((await sendFeedback(payload, vi.fn().mockRejectedValue(new Error('réseau')) as unknown as typeof fetch)).ok).toBe(false)
   })
 })
