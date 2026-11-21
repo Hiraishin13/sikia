@@ -37,9 +37,8 @@ Ouvrir l'adresse affichée par Vite, autoriser la caméra, cliquer sur **Traduir
 La caméra exige HTTPS ou `localhost`. Pour tester sur un téléphone, utiliser un tunnel HTTPS
 (ex. `cloudflared tunnel --url http://localhost:5173`) : le proxy Vite gère aussi le WebSocket.
 
-La CI (`.github/workflows/ci.yml`) rejoue tout cela à chaque push et pull request.
-
 Tests : `npm test` et `npm run lint` dans `web/` ; `python -m pytest` et `python -m ruff check .` dans `api/`.
+La CI ([workflow](.github/workflows/ci.yml)) rejoue ces vérifications, plus les types et le build, à chaque push et pull request.
 
 ## Protocole `/v1/stream`
 
