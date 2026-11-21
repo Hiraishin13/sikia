@@ -2,12 +2,13 @@ import type { RawFrame } from './landmarks'
 
 export type Hint = 'ok' | 'light' | 'body' | 'hands' | 'edge'
 
+/** Consignes courtes, à l'impératif, qui disent quoi faire plutôt que ce qui ne va pas. */
 export const HINT_TEXT: Record<Hint, string> = {
-  ok: 'Cadrage correct',
-  light: 'Trop sombre : placez-vous face à une lumière',
+  ok: 'Bien cadré',
+  light: 'Placez-vous face à une lumière',
   body: 'Montrez la tête et les épaules',
   hands: 'Montrez vos deux mains',
-  edge: 'Une main touche le bord : reculez un peu',
+  edge: 'Reculez un peu : une main touche le bord',
 }
 
 const MIN_LUMINANCE = 55 // sur 255
@@ -23,6 +24,31 @@ export function assessFraming(raw: RawFrame, luminance: number): Hint {
   if (!raw.leftHand || !raw.rightHand) return 'hands'
   if (!inBounds(raw.leftHand) || !inBounds(raw.rightHand)) return 'edge'
   return 'ok'
+}
+
+/**
+ * Évite que le message clignote : un nouvel état n'est affiché qu'après `stableFrames`
+ * détections identiques de suite (~0,3 s).
+ */
+export function createHintSmoother(stableFrames = 8, initial: Hint = 'body') {
+  let shown = initial
+  let candidate = initial
+  let count = 0
+  return (next: Hint): Hint => {
+    if (next === shown) {
+      candidate = shown
+      count = 0
+    } else if (next === candidate) {
+      if (++count >= stableFrames) {
+        shown = next
+        count = 0
+      }
+    } else {
+      candidate = next
+      count = 1
+    }
+    return shown
+  }
 }
 
 /** Luminance moyenne (0..255) d'une miniature de la vidéo. */

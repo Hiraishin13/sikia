@@ -1,37 +1,46 @@
-:root {
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --border: #d4d8e0;
-  --muted: #5b6472;
-  --accent: #4f46e5;
-  --ok-bg: #dcfce7;
-  --ok-fg: #14532d;
-  --warn-bg: #fef3c7;
-  --warn-fg: #78350f;
-  color-scheme: light dark;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1218;
-    --surface: #1a1f2a;
-    --border: #2f3747;
-    --muted: #9aa3b2;
-    --accent: #6366f1;
-    --ok-bg: #14532d;
-    --ok-fg: #dcfce7;
-    --warn-bg: #78350f;
-    --warn-fg: #fef3c7;
-  }
-}
+@import './styles/tokens.css';
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  background: var(--bg);
-  color: light-dark(#111827, #e5e7eb);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* Le focus clavier doit toujours se voir. */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

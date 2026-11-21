@@ -1,0 +1,63 @@
+/*
+ * Charte Sikia — jetons de design. Voir docs/design-system.md.
+ * Règle d'or : les neutres portent l'interface ; la couleur ne sert qu'à signaler un état.
+ */
+:root {
+  /* Neutres chauds (clair) */
+  --paper: #f5f3ee; /* fond de page */
+  --surface: #fffefb; /* cartes, champs */
+  --ink: #1c1b19; /* texte, bouton principal */
+  --ink-2: #5e5a52; /* texte secondaire (6,2:1 sur --paper) */
+  --line: #ddd9cf; /* filets */
+
+  /* États : deux teintes seulement */
+  --accent: #b4492b; /* attention, enregistrement en cours (4,8:1 sur --paper) */
+  --on-accent: #fffefb;
+  --ok: #2f6b4f; /* « bien cadré » (5,7:1 sur --paper) */
+
+  /* Zone caméra : toujours sombre, quel que soit le thème */
+  --stage: #0e0d0c;
+  --stage-ink: #f3f1ea;
+
+  --font: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Échelle typographique (base 17 px : lisible sans zoom) */
+  --text-s: 0.875rem;
+  --text-m: 1rem;
+  --text-l: clamp(1.125rem, 1.02rem + 0.5vw, 1.4rem);
+  /* Texte traduit : se lit à bout de bras sur mobile, à travers une table sur grand écran. */
+  --text-xl: clamp(1.75rem, 1.25rem + 2vw, 2.75rem);
+
+  /* Espacement : multiples de 4 */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  --radius: 8px;
+  --tap: 52px; /* hauteur des boutons : large cible tactile */
+
+  /* Mise en page */
+  --gutter: clamp(16px, 4vw, 32px); /* marge latérale de la page */
+  --nav-h: 60px; /* barre d'onglets en bas (mobile portrait) */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #151412;
+    --surface: #1e1d1a;
+    --ink: #efece4;
+    --ink-2: #a9a499;
+    --line: #35332e;
+    --accent: #e27f5c;
+    --on-accent: #151412;
+    --ok: #7cc4a0;
+  }
+}

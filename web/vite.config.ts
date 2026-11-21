@@ -15,8 +15,8 @@ export default defineConfig({
         short_name: 'Sikia',
         description: 'Traduction de la langue des signes, sur votre téléphone',
         lang: 'fr',
-        theme_color: '#4f46e5',
-        background_color: '#0f1218',
+        theme_color: '#1c1b19',
+        background_color: '#f5f3ee',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
@@ -27,7 +27,7 @@ export default defineConfig({
       workbox: {
         // Les modèles et le WASM (~20 Mo) ne sont pas préchargés : ils sont mis en cache
         // à la première utilisation, puis servis hors ligne.
-        globPatterns: ['**/*.{js,css,html,svg}'],
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         globIgnores: ['mediapipe/**'],
         runtimeCaching: [
           {
