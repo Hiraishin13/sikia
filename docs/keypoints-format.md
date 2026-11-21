@@ -34,6 +34,7 @@ Un segment absent (main non détectée…) est rempli de zéros et son drapeau e
 {
   "version": 1,
   "label": "BONJOUR",
+  "signer": "pseudo-du-signeur",
   "createdAt": "2026-11-21T10:00:00.000Z",
   "layout": { "valuesPerFrame": 273, "quantScale": 4096, "segments": { "...": "..." } },
   "frames": [{ "t": 0, "flags": [1, 1, 0, 1], "q": [0, 0, "... 273 entiers"] }]
@@ -41,3 +42,6 @@ Un segment absent (main non détectée…) est rempli de zéros et son drapeau e
 ```
 
 `flags` = `[valid, mainGauche, mainDroite, visage]`, `t` en ms depuis le début.
+
+`signer` est un **pseudo** (jamais un nom), saisi dans l'onglet Contribuer : l'entraînement s'en sert pour que
+le jeu de test ne contienne que des personnes absentes de l'entraînement (`ml/`, découpage par signeur).
