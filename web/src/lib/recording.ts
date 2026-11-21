@@ -11,6 +11,8 @@ export interface Recording {
   id: string
   /** Signe ou phrase enregistrée, saisi par l'utilisateur. */
   label: string
+  /** Pseudo du signeur (jamais un nom) : sert à découper entraînement et test par personne. */
+  signer?: string
   createdAt: string
   frames: KeypointFrame[]
 }
@@ -39,6 +41,7 @@ export function serialize(rec: Recording) {
   return {
     version: 1,
     label: rec.label,
+    signer: rec.signer ?? '',
     createdAt: rec.createdAt,
     layout: {
       valuesPerFrame: VALUES_PER_FRAME,

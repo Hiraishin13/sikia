@@ -77,6 +77,7 @@
 
 #panel {
   display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
@@ -515,7 +516,7 @@
     inset: auto 0 0 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     gap: 0;
     padding-bottom: var(--safe-b);
     background: var(--paper);
@@ -618,4 +619,200 @@
   .layout {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   }
+}
+
+/* ───────── Correction d'une traduction ───────── */
+
+.btn-link {
+  min-height: 44px;
+  padding: 0 var(--s2);
+  background: none;
+  color: var(--ink-2);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.correction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-top: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--text-m);
+}
+
+.correction-title {
+  font-weight: 700;
+}
+
+.correction-actions,
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.chip {
+  min-height: 44px;
+  padding: 0 var(--s4);
+}
+
+.correction-note,
+.correction-error,
+.note-ok {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  font-size: var(--text-s);
+  color: var(--ink-2);
+}
+
+.correction-error {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.note-ok {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.correction svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Réserve la place de la barre d'actions (et de la barre d'onglets sur mobile) lors du défilement. */
+.correction {
+  scroll-margin-bottom: calc(var(--tap) + var(--s6) + var(--s4));
+}
+
+@media (max-width: 599px) and (orientation: portrait) {
+  .correction {
+    scroll-margin-bottom: calc(var(--nav-h) + var(--safe-b) + var(--tap) + var(--s6) + var(--s4));
+  }
+}
+
+.field small {
+  font-weight: 400;
+}
+
+/* ───────── Diagnostic de performance (?debug) ───────── */
+
+.perf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.perf h2 {
+  font-size: var(--text-m);
+}
+
+.perf .framing {
+  margin-top: 0;
+}
+
+.perf-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  font-size: var(--text-s);
+}
+
+.perf-grid dt {
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+.perf-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── Gestes : probabilités ───────── */
+
+.gesture-now {
+  min-height: 96px;
+}
+
+.gesture-name {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.gesture-score {
+  margin-left: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--text-l);
+  white-space: nowrap;
+}
+
+.gesture-phrase {
+  margin-top: var(--s2);
+  font-size: var(--text-l);
+  color: var(--ink-2);
+}
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.bars li {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr) 3.2rem;
+  align-items: center;
+  gap: var(--s3);
+  font-size: var(--text-s);
+}
+
+.bar-label {
+  overflow-wrap: anywhere;
+}
+
+/* Le pourcentage est écrit : la barre n'est qu'un repère visuel. */
+.bar-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transition: width 0.15s;
+}
+
+.bar-value {
+  text-align: right;
+  font-weight: 700;
 }

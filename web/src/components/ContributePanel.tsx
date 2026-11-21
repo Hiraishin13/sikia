@@ -10,10 +10,30 @@ interface Props {
   onRecorded: (r: Recording) => void
 }
 
+const SIGNER_KEY = 'sikia.signer'
+
+/** Le pseudo est mémorisé sur l'appareil seulement ; le stockage peut être bloqué (navigation privée). */
+function readSigner(): string {
+  try {
+    return localStorage.getItem(SIGNER_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function saveSigner(value: string) {
+  try {
+    localStorage.setItem(SIGNER_KEY, value)
+  } catch {
+    /* sans importance */
+  }
+}
+
 const GOOD_TRACKING = 0.7 // part d'images avec les deux mains, en dessous : refaire l'essai
 
 export function ContributePanel({ subscribe, recordings, onRecorded }: Props) {
   const [label, setLabel] = useState('')
+  const [signer, setSigner] = useState(readSigner)
   const [recording, setRecording] = useState(false)
   const [elapsedS, setElapsedS] = useState(0)
   const framesRef = useRef<KeypointFrame[]>([])
@@ -38,6 +58,7 @@ export function ContributePanel({ subscribe, recordings, onRecorded }: Props) {
       finalizeRecording({
         id: Date.now().toString(36),
         label: label.trim(),
+        signer: signer.trim(),
         createdAt: new Date().toISOString(),
         frames,
       }),
@@ -52,6 +73,20 @@ export function ContributePanel({ subscribe, recordings, onRecorded }: Props) {
         Enregistrez un signe pour enrichir le vocabulaire. Les fichiers restent sur votre appareil tant
         que vous ne les exportez pas.
       </p>
+
+      <label className="field">
+        <span>Votre pseudo</span>
+        <input
+          value={signer}
+          placeholder="Pas votre nom : un pseudo suffit"
+          disabled={recording}
+          onChange={(e) => {
+            setSigner(e.target.value)
+            saveSigner(e.target.value)
+          }}
+        />
+        <small className="hintline">Il regroupe vos enregistrements, pour évaluer le modèle sur des personnes qu'il n'a jamais vues.</small>
+      </label>
 
       <label className="field">
         <span>Quel signe allez-vous faire ?</span>

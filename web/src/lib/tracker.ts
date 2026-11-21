@@ -5,28 +5,47 @@ import {
   PoseLandmarker,
 } from '@mediapipe/tasks-vision'
 import type { Point, RawFrame } from './landmarks'
+import type { Delegate, Delegates, FrameTiming } from './perf'
 
 const BASE = `${import.meta.env.BASE_URL}mediapipe/`
 
+/**
+ * Le visage (expressions non manuelles : question, négation) évolue bien plus lentement que les
+ * mains : on ne le recalcule qu'une image sur deux et on reprend le dernier résultat entre-temps.
+ * C'est l'étape la plus économique à alléger pour atteindre 15 i/s sur un téléphone modeste.
+ * Surchargeable pour mesurer : ?facestride=1 (chaque image) ou ?facestride=3.
+ */
+export const DEFAULT_FACE_STRIDE = 2
+
+export interface TrackerOptions {
+  faceStride?: number
+}
+
 export interface Tracker {
   /** Analyse l'image courante de la vidéo. `nowMs` doit croître à chaque appel. */
-  detect(video: HTMLVideoElement, nowMs: number): RawFrame
+  detect(video: HTMLVideoElement, nowMs: number): { raw: RawFrame; timing: FrameTiming }
+  /** Calcul réellement utilisé par chaque modèle (le GPU n'est pas disponible partout). */
+  delegates: Delegates
+  faceStride: number
   close(): void
 }
 
 /** Essaie le GPU, retombe sur le CPU si le navigateur ne le supporte pas. */
-async function withDelegate<T>(create: (delegate: 'GPU' | 'CPU') => Promise<T>): Promise<T> {
+export async function withDelegate<T>(
+  create: (delegate: Delegate) => Promise<T>,
+): Promise<{ model: T; delegate: Delegate }> {
   try {
-    return await create('GPU')
+    return { model: await create('GPU'), delegate: 'GPU' }
   } catch {
-    return create('CPU')
+    return { model: await create('CPU'), delegate: 'CPU' }
   }
 }
 
-export async function createTracker(): Promise<Tracker> {
+export async function createTracker({ faceStride = DEFAULT_FACE_STRIDE }: TrackerOptions = {}): Promise<Tracker> {
   const fileset = await FilesetResolver.forVisionTasks(`${BASE}wasm`)
+  const stride = Math.max(1, Math.round(faceStride))
 
-  const [hands, pose, face] = await Promise.all([
+  const [h, p, f] = await Promise.all([
     withDelegate((delegate) =>
       HandLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: `${BASE}models/hand_landmarker.task`, delegate },
@@ -49,12 +68,30 @@ export async function createTracker(): Promise<Tracker> {
       }),
     ),
   ])
+  const hands = h.model
+  const pose = p.model
+  const face = f.model
+
+  let frameNo = 0
+  let lastFace: Point[] | null = null
 
   return {
+    delegates: { hands: h.delegate, pose: p.delegate, face: f.delegate },
+    faceStride: stride,
     detect(video, nowMs) {
+      const t0 = performance.now()
       const handResult = hands.detectForVideo(video, nowMs)
+      const t1 = performance.now()
       const poseResult = pose.detectForVideo(video, nowMs)
-      const faceResult = face.detectForVideo(video, nowMs)
+      const t2 = performance.now()
+
+      let faceMs: number | null = null
+      if (frameNo++ % stride === 0) {
+        const faceResult = face.detectForVideo(video, nowMs)
+        lastFace = faceResult.faceLandmarks[0] ?? null
+        faceMs = performance.now() - t2
+      }
+      const tEnd = performance.now()
 
       let leftHand: Point[] | null = null
       let rightHand: Point[] | null = null
@@ -66,11 +103,14 @@ export async function createTracker(): Promise<Tracker> {
       })
 
       return {
-        aspect: video.videoWidth / video.videoHeight,
-        leftHand,
-        rightHand,
-        pose: poseResult.landmarks[0] ?? null,
-        face: faceResult.faceLandmarks[0] ?? null,
+        raw: {
+          aspect: video.videoWidth / video.videoHeight,
+          leftHand,
+          rightHand,
+          pose: poseResult.landmarks[0] ?? null,
+          face: lastFace,
+        },
+        timing: { total: tEnd - t0, hands: t1 - t0, pose: t2 - t1, face: faceMs },
       }
     },
     close() {

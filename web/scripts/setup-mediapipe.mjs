@@ -10,6 +10,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, 'public', 'mediapipe')
 
 const MODELS = {
+  'gesture_recognizer.task':
+    'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task',
   'hand_landmarker.task':
     'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
   'pose_landmarker_lite.task':

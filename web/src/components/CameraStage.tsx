@@ -12,6 +12,8 @@ interface Props {
   fps: number
   aspect: number
   debug: boolean
+  /** En mode gestes, pas de silhouette de cadrage : seule la main compte. */
+  showGuide?: boolean
   onStart: () => void
 }
 
@@ -20,10 +22,11 @@ const HINT_ICON: Record<Hint, IconName> = {
   light: 'sun',
   body: 'person',
   hands: 'hand',
+  hand: 'hand',
   edge: 'alert',
 }
 
-export function CameraStage({ videoRef, overlayRef, status, error, hint, fps, aspect, debug, onStart }: Props) {
+export function CameraStage({ videoRef, overlayRef, status, error, hint, fps, aspect, debug, showGuide = true, onStart }: Props) {
   const ready = status === 'ready'
   return (
     <section
@@ -36,7 +39,7 @@ export function CameraStage({ videoRef, overlayRef, status, error, hint, fps, as
         <canvas ref={overlayRef} aria-hidden />
 
         {/* Le guide n'apparaît que si le cadrage est à corriger : il disparaît quand tout va bien. */}
-        {ready && (
+        {ready && showGuide && (
           <svg
             className={`camera-guide${hint === 'ok' ? ' is-hidden' : ''}`}
             viewBox="0 0 100 100"

@@ -1,16 +1,19 @@
 import { useCallback, useState } from 'react'
 import './App.css'
 import { CameraStage } from './components/CameraStage'
+import { GesturePanel } from './components/GesturePanel'
 import { ContributePanel } from './components/ContributePanel'
 import { Icon, Mark, type IconName } from './components/Icon'
+import { PerfPanel } from './components/PerfPanel'
 import { TranslatePanel, type Sentence } from './components/TranslatePanel'
 import { useCapture } from './hooks/useCapture'
 import type { Recording } from './lib/recording'
 
-type Tab = 'translate' | 'contribute'
+type Tab = 'translate' | 'gestures' | 'contribute'
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'translate', label: 'Traduire', icon: 'translate' },
+  { id: 'gestures', label: 'Gestes', icon: 'hand' },
   { id: 'contribute', label: 'Contribuer', icon: 'record' },
 ]
 
@@ -18,8 +21,9 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
 const DEBUG = new URLSearchParams(location.search).has('debug')
 
 export default function App() {
-  const capture = useCapture()
   const [tab, setTab] = useState<Tab>('translate')
+  // L'onglet Gestes fait tourner le reconnaisseur de gestes de Google ; les autres, le suivi des signes.
+  const capture = useCapture(tab === 'gestures' ? 'gestures' : 'signs')
   const [sentences, setSentences] = useState<Sentence[]>([])
   const [recordings, setRecordings] = useState<Recording[]>([])
 
@@ -59,17 +63,21 @@ export default function App() {
           fps={capture.fps}
           aspect={capture.aspect}
           debug={DEBUG}
+          showGuide={tab !== 'gestures'}
           onStart={capture.start}
         />
 
         <div id="panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
           {capture.status !== 'ready' ? (
             <Steps />
+          ) : tab === 'gestures' ? (
+            <GesturePanel subscribeGestures={capture.subscribeGestures} status={capture.gestureStatus} />
           ) : tab === 'translate' ? (
             <TranslatePanel subscribe={capture.subscribe} sentences={sentences} onSentence={addSentence} />
           ) : (
             <ContributePanel subscribe={capture.subscribe} recordings={recordings} onRecorded={addRecording} />
           )}
+          {DEBUG && capture.status === 'ready' && <PerfPanel perf={capture.perf} />}
         </div>
       </main>
     </div>

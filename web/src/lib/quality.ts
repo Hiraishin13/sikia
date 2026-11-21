@@ -1,6 +1,6 @@
 import type { RawFrame } from './landmarks'
 
-export type Hint = 'ok' | 'light' | 'body' | 'hands' | 'edge'
+export type Hint = 'ok' | 'light' | 'body' | 'hands' | 'hand' | 'edge'
 
 /** Consignes courtes, à l'impératif, qui disent quoi faire plutôt que ce qui ne va pas. */
 export const HINT_TEXT: Record<Hint, string> = {
@@ -8,6 +8,7 @@ export const HINT_TEXT: Record<Hint, string> = {
   light: 'Placez-vous face à une lumière',
   body: 'Montrez la tête et les épaules',
   hands: 'Montrez vos deux mains',
+  hand: 'Montrez une main à la caméra',
   edge: 'Reculez un peu : une main touche le bord',
 }
 
